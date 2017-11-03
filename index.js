@@ -11,22 +11,22 @@ const PromisePool = promisePool.PromisePool;
 // Maximum concurrent process.
 const MAX_CONCURRENT = 3;
 
-exports.updateActors = functions.database.ref('/actors/{actorId}/').onWrite(event => {
+exports.updateArtists = functions.database.ref('/artists/{artistId}/').onWrite(event => {
   const deleted = !event.data.exists();
   const changed = event.data.child('fullName').changed();
   if (deleted || changed) {
-    const actorId = event.data.key;
-    const actor = event.data.val() || {};
-    const artworksIds = Object.keys(actor.artworks || {});
+    const artistId = event.data.key;
+    const artist = event.data.val() || {};
+    const artworksIds = Object.keys(artist.artworks || {});
     if (artworksIds.length) {
       const promisePool = new PromisePool(() => {
         if (artworksIds.length > 0) {
           const artworkId = artworksIds.pop();
-          const artwork = actor.artworks[artworkId];
-          const path = '/users/' + artwork.ownerId + '/artworks/' + artworkId + '/actors/' + actorId;
+          const artwork = artist.artworks[artworkId];
+          const path = '/users/' + artwork.ownerId + '/artworks/' + artworkId + '/artists/' + artistId;
           if (changed) {
             return admin.database().ref(path).update({
-              fullName: actor.fullName,
+              fullName: artist.fullName,
               lastmodified: event.timestamp
             }).catch(error => {
               console.error('Update artwork', artworkId, 'failed:', error);
