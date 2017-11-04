@@ -53,6 +53,7 @@ exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artwo
   const deleted = !event.data.exists();
   const changed = event.data.child('title').changed();
   if (deleted || changed) {
+    const userId = event.params.userId;
     const artworkId = event.data.key;
     const artwork = event.data.val() || {};
 
@@ -62,16 +63,17 @@ exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artwo
       const promisePool = new PromisePool(() => {
         if (artistsIds.length > 0) {
           const artistId = artistsIds.pop();
-          const path = '/artists/' + artistId + '/artworks/' + artworkId;
+          const ref = admin.database().ref('/artists/' + artistId + '/artworks/' + artworkId);
           if (changed) {
-            return admin.database().ref(path).update({
+            return ref.set({
+              ownerId: userId,
               title: artwork.title,
               lastmodified: event.timestamp
             }).catch(error => {
               console.error('Update artist', artistId, 'failed:', error);
             });
           } else if (deleted) {
-            return admin.database().ref(path).remove().catch(error => {
+            return ref.remove().catch(error => {
               console.error('Remove artist', artistId, 'failed:', error);
             });
           } else {
