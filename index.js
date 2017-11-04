@@ -51,7 +51,7 @@ exports.updateArtists = functions.database.ref('/artists/{artistId}/').onWrite(e
 
 exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artworkId}/').onWrite(event => {
   const deleted = !event.data.exists();
-  const changed = event.data.child('fullName').changed();
+  const changed = event.data.child('title').changed();
   if (deleted || changed) {
     const artworkId = event.data.key;
     const artwork = event.data.val() || {};
@@ -62,7 +62,6 @@ exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artwo
       const promisePool = new PromisePool(() => {
         if (artistsIds.length > 0) {
           const artistId = artistsIds.pop();
-          const artist = artwork.artists[artistId];
           const path = '/artists/' + artistId + '/artworks/' + artworkId;
           if (changed) {
             return admin.database().ref(path).update({
