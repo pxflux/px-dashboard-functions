@@ -23,16 +23,16 @@ exports.updateArtists = functions.database.ref('/artists/{artistId}/').onWrite(e
         if (artworksIds.length > 0) {
           const artworkId = artworksIds.pop();
           const artwork = artist.artworks[artworkId];
-          const path = '/users/' + artwork.ownerId + '/artworks/' + artworkId + '/artists/' + artistId;
+          const ref = admin.database().ref('/users/' + artwork.ownerId + '/artworks/' + artworkId + '/artists/' + artistId);
           if (changed) {
-            return admin.database().ref(path).update({
+            return ref.update({
               fullName: artist.fullName,
               lastmodified: event.timestamp
             }).catch(error => {
               console.error('Update artwork', artworkId, 'failed:', error);
             });
           } else if (deleted) {
-            return admin.database().ref(path).remove().catch(error => {
+            return ref.remove().catch(error => {
               console.error('Remove artwork', artworkId, 'failed:', error);
             });
           } else {
@@ -51,7 +51,7 @@ exports.updateArtists = functions.database.ref('/artists/{artistId}/').onWrite(e
 
 exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artworkId}/').onWrite(event => {
   const deleted = !event.data.exists();
-  const changed = event.data.child('title').changed();
+  const changed = event.data.child('title').changed() || event.data.child('artists').changed();
   if (deleted || changed) {
     const userId = event.params.userId;
     const artworkId = event.data.key;
