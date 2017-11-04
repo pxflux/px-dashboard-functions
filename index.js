@@ -48,3 +48,43 @@ exports.updateArtists = functions.database.ref('/artists/{artistId}/').onWrite(e
   }
   return null;
 });
+
+exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artworkId}/').onWrite(event => {
+  const deleted = !event.data.exists();
+  const changed = event.data.child('fullName').changed();
+  if (deleted || changed) {
+    const artworkId = event.data.key;
+    const artwork = event.data.val() || {};
+
+    // Sync artists
+    const artistsIds = Object.keys(artwork.artists || {});
+    if (artistsIds.length) {
+      const promisePool = new PromisePool(() => {
+        if (artistsIds.length > 0) {
+          const artistId = artistsIds.pop();
+          const artist = artwork.artists[artistId];
+          const path = '/artists/' + artistId + '/artworks/' + artworkId;
+          if (changed) {
+            return admin.database().ref(path).update({
+              title: artwork.title,
+              lastmodified: event.timestamp
+            }).catch(error => {
+              console.error('Update artist', artistId, 'failed:', error);
+            });
+          } else if (deleted) {
+            return admin.database().ref(path).remove().catch(error => {
+              console.error('Remove artist', artistId, 'failed:', error);
+            });
+          } else {
+            return Promise.resolve();
+          }
+        }
+      }, MAX_CONCURRENT);
+
+      return promisePool.start().catch(error => {
+        console.error('Update artists failed:', error);
+      });
+    }
+  }
+  return null;
+});
