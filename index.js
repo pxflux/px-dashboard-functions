@@ -94,7 +94,7 @@ exports.createTeam = functions.auth.user().onCreate(event => {
   const user = event.data;
   if (user.email) {
     const db = admin.database();
-    db.ref('invitations/emails/' + user.email).once('value').then(snapshot => {
+    const query = db.ref('invitations').orderByChild('email').startAt(user.email).limitToFirst(1).once('value').then(snapshot => {
       if (snapshot.exists()) {
         return null;
       }
@@ -106,8 +106,27 @@ exports.createTeam = functions.auth.user().onCreate(event => {
           const metadata = {
             refreshTime: event.timestamp
           };
-          return db.ref("metadata/" + user.uid).set(metadata);
+          return db.ref('metadata/' + user.uid).set(metadata);
         });
+      });
+    });
+  }
+  return null;
+});
+
+exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}').onUpdate(event => {
+  if (event.data.child('uid').exists()) {
+    const uid = event.data.child('uid').val();
+    const teamId = event.data.child('teamId').val();
+    return admin.database().ref('/invitations/' + event.data.key).remove().then(function () {
+      const claims = {
+        teamId: teamId
+      };
+      return admin.auth().setCustomUserClaims(uid, claims).then(() => {
+        const metadata = {
+          refreshTime: event.timestamp
+        };
+        return db.ref('metadata/' + user.uid).set(metadata);
       });
     });
   }
