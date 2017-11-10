@@ -94,7 +94,7 @@ exports.createTeam = functions.auth.user().onCreate(event => {
   const user = event.data;
   if (user.email) {
     const db = admin.database();
-    const query = db.ref('invitations').orderByChild('email').startAt(user.email).limitToFirst(1).once('value').then(snapshot => {
+    db.ref('invitations').orderByChild('email').startAt(user.email).limitToFirst(1).once('value').then(snapshot => {
       if (snapshot.exists()) {
         return null;
       }
