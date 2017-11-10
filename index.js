@@ -90,7 +90,7 @@ exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artwo
   return null;
 });
 
-exports.createTeam = functions.auth.user().onCreate(event => {
+exports.createAccount = functions.auth.user().onCreate(event => {
   const user = event.data;
   if (user.email) {
     const db = admin.database();
@@ -98,7 +98,7 @@ exports.createTeam = functions.auth.user().onCreate(event => {
       if (snapshot.exists()) {
         return null;
       }
-      return db.push("accounts").then(function (data) {
+      return db.ref("accounts").push({'ownerId': user.uid}).then(function (data) {
         const claims = {
           teamId: data.key
         };
