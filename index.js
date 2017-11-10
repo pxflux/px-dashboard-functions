@@ -70,11 +70,11 @@ exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artwo
               title: artwork.title,
               lastmodified: event.timestamp
             }).catch(error => {
-              console.error('Update artist', artistId, 'failed:', error);
+              console.error('Add artwork to artist', artistId, 'failed:', error);
             });
           } else if (deleted) {
             return ref.remove().catch(error => {
-              console.error('Remove artist', artistId, 'failed:', error);
+              console.error('Remove artwork from artist', artistId, 'failed:', error);
             });
           } else {
             return Promise.resolve();
@@ -86,6 +86,30 @@ exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artwo
         console.error('Update artists failed:', error);
       });
     }
+  }
+  return null;
+});
+
+exports.createTeam = functions.auth.user().onCreate(event => {
+  const user = event.data;
+  if (user.email) {
+    const db = admin.database();
+    db.ref('invitations/emails/' + user.email).once('value').then(snapshot => {
+      if (snapshot.exists()) {
+        return null;
+      }
+      return db.push("accounts").then(function (data) {
+        const claims = {
+          teamId: data.key
+        };
+        return admin.auth().setCustomUserClaims(user.uid, claims).then(() => {
+          const metadata = {
+            refreshTime: event.timestamp
+          };
+          return db.ref("metadata/" + user.uid).set(metadata);
+        });
+      });
+    });
   }
   return null;
 });
