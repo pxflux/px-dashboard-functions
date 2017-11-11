@@ -100,7 +100,7 @@ exports.createAccount = functions.auth.user().onCreate(event => {
   account['users'][user.uid] = true;
   return db.ref("accounts").push(account).then(function (data) {
     const accountId = data.key;
-    return db.ref('users/' + user.uid + '/accounts/' + accountId).set(true).then(function () {
+    return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': user.displayName}).then(function () {
       const claims = {
         accountId: accountId
       };
@@ -110,9 +110,31 @@ exports.createAccount = functions.auth.user().onCreate(event => {
         };
         return db.ref('metadata/' + user.uid).set(metadata);
       });
-
     });
   });
+});
+
+exports.wipeoutUser = functions.auth.user().onDelete(event => {
+  const uid = event.data.uid;
+  return Promise.all([
+    admin.database().ref('/users/' + uid).once('value').then(function (res) {
+      if (!res.exists()) {
+        return null;
+      }
+      const user = res.val() || {};
+      const accountIds = Object.keys(user.accounts || {});
+      if (accountIds.length) {
+        const promisePool = new PromisePool(() => {
+          if (accountIds.length > 0) {
+            const accountId = accountIds.pop();
+            return admin.database().ref('/accounts/' + accountId + '/users/' + uid).remove();
+          }
+        }, MAX_CONCURRENT);
+        return promisePool.start();
+      }
+    }),
+    admin.database().ref('/metadata/' + uid).remove()
+  ]);
 });
 
 exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}').onUpdate(event => {
