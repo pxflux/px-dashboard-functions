@@ -92,35 +92,36 @@ exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artwo
 
 exports.createAccount = functions.auth.user().onCreate(event => {
   const user = event.data;
-  if (user.email) {
-    const db = admin.database();
-    db.ref('invitations').orderByChild('email').startAt(user.email).limitToFirst(1).once('value').then(snapshot => {
-      if (snapshot.exists()) {
-        return null;
-      }
-      return db.ref("accounts").push({'ownerId': user.uid}).then(function (data) {
-        const claims = {
-          teamId: data.key
+  const db = admin.database();
+  const account = {
+    'title': user.displayName,
+    'users': {}
+  };
+  account['users'][user.uid] = true;
+  return db.ref("accounts").push(account).then(function (data) {
+    const accountId = data.key;
+    return db.ref('users/' + user.uid + '/accounts/' + accountId).set(true).then(function () {
+      const claims = {
+        accountId: accountId
+      };
+      return admin.auth().setCustomUserClaims(user.uid, claims).then(() => {
+        const metadata = {
+          refreshTime: event.timestamp
         };
-        return admin.auth().setCustomUserClaims(user.uid, claims).then(() => {
-          const metadata = {
-            refreshTime: event.timestamp
-          };
-          return db.ref('metadata/' + user.uid).set(metadata);
-        });
+        return db.ref('metadata/' + user.uid).set(metadata);
       });
+
     });
-  }
-  return null;
+  });
 });
 
 exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}').onUpdate(event => {
   if (event.data.child('uid').exists()) {
     const uid = event.data.child('uid').val();
-    const teamId = event.data.child('teamId').val();
+    const accountId = event.data.child('accountId').val();
     return admin.database().ref('/invitations/' + event.data.key).remove().then(function () {
       const claims = {
-        teamId: teamId
+        accountId: accountId
       };
       return admin.auth().setCustomUserClaims(uid, claims).then(() => {
         const metadata = {
