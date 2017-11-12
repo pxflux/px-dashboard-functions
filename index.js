@@ -90,7 +90,7 @@ exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artwo
   return null;
 });
 
-exports.createAccount = functions.auth.user().onCreate(event => {
+exports.createAuth = functions.auth.user().onCreate(event => {
   const user = event.data;
   const db = admin.database();
   const account = {
@@ -114,7 +114,36 @@ exports.createAccount = functions.auth.user().onCreate(event => {
   });
 });
 
-exports.syncAccount = functions.database.ref('accounts/{accountId}').onUpdate(event => {
+exports.deleteAuth = functions.auth.user().onDelete(event => {
+  const uid = event.data.uid;
+  return Promise.all([
+    admin.database().ref('/users/' + uid).remove(),
+    admin.database().ref('/metadata/' + uid).remove()
+  ])
+});
+
+exports.deleteUser = functions.database.ref('users/{userId}').onDelete(event => {
+  const userId = event.data.key;
+  const user = event.data.val() || {};
+
+  // Sync accounts
+  const accountIds = Object.keys(user.accounts || {});
+  if (accountIds.length) {
+    const promisePool = new PromisePool(() => {
+      if (accountIds.length > 0) {
+        const accountId = accountIds.pop();
+        return admin.database().ref('/accounts/' + accountId + '/users/' + userId).remove();
+      }
+    }, MAX_CONCURRENT);
+
+    return promisePool.start().catch(error => {
+      console.error('Update accounts failed:', error);
+    });
+  }
+  return null;
+});
+
+exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(event => {
   const changed = event.data.child('title').changed() || event.data.child('users').changed();
   if (changed) {
     const accountId = event.data.key;
@@ -147,30 +176,6 @@ exports.syncAccount = functions.database.ref('accounts/{accountId}').onUpdate(ev
     }
   }
   return null;
-});
-
-exports.wipeoutUser = functions.auth.user().onDelete(event => {
-  const uid = event.data.uid;
-  return Promise.all([
-    admin.database().ref('/users/' + uid).once('value').then(function (res) {
-      if (!res.exists()) {
-        return null;
-      }
-      const user = res.val() || {};
-      const accountIds = Object.keys(user.accounts || {});
-      if (accountIds.length) {
-        const promisePool = new PromisePool(() => {
-          if (accountIds.length > 0) {
-            const accountId = accountIds.pop();
-            return admin.database().ref('/accounts/' + accountId + '/users/' + uid).remove();
-          }
-        }, MAX_CONCURRENT);
-        return promisePool.start();
-      }
-    }),
-    admin.database().ref('/metadata/' + uid).remove(),
-    admin.database().ref('/users/' + uid).remove()
-  ]);
 });
 
 exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}').onUpdate(event => {
