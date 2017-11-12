@@ -114,6 +114,41 @@ exports.createAccount = functions.auth.user().onCreate(event => {
   });
 });
 
+exports.syncAccount = functions.database.ref('accounts/{accountId}').onUpdate(event => {
+  const changed = event.data.child('title').changed() || event.data.child('users').changed();
+  if (changed) {
+    const accountId = event.data.key;
+    const account = event.data.val() || {};
+
+    // Sync users
+    const userIds = Object.keys(account.users || {});
+    if (userIds.length) {
+      const promisePool = new PromisePool(() => {
+        if (userIds.length > 0) {
+          const userId = userIds.pop();
+          const ref = admin.database().ref('/users/' + userId + '/accounts/' + accountId);
+          if (changed) {
+            return ref.set({
+              title: account.title
+            });
+          } else {
+            return Promise.resolve();
+          }
+        }
+      }, MAX_CONCURRENT);
+
+      return promisePool.start().catch(error => {
+        console.error('Update account failed:', error);
+      });
+    } else {
+      return admin.database.ref('accounts/' + accountId).remove().catch(error => {
+        console.error('Remove account failed:', error);
+      });
+    }
+  }
+  return null;
+});
+
 exports.wipeoutUser = functions.auth.user().onDelete(event => {
   const uid = event.data.uid;
   return Promise.all([
@@ -133,10 +168,9 @@ exports.wipeoutUser = functions.auth.user().onDelete(event => {
         return promisePool.start();
       }
     }),
-    admin.database().ref('/metadata/' + uid).remove()
-  ]).then(function () {
-    return admin.database().ref('/users/' + uid).remove()
-  });
+    admin.database().ref('/metadata/' + uid).remove(),
+    admin.database().ref('/users/' + uid).remove()
+  ]);
 });
 
 exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}').onUpdate(event => {
