@@ -134,7 +134,9 @@ exports.wipeoutUser = functions.auth.user().onDelete(event => {
       }
     }),
     admin.database().ref('/metadata/' + uid).remove()
-  ]);
+  ]).then(function () {
+    return admin.database().ref('/users/' + uid).remove()
+  });
 });
 
 exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}').onUpdate(event => {
