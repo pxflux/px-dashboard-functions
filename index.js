@@ -188,7 +188,7 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
 exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}').onUpdate(event => {
   if (event.data.child('user').exists()) {
     const user = event.data.child('user').val();
-    const accountId = event.data.child('accountId').val();
+    const accountId = event.data.child('account').child('id').val();
     return admin.database().ref('/invitations/' + event.data.key).remove().then(function () {
       const data = {
         'displayName': user.displayName,
