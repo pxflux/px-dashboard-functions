@@ -103,7 +103,7 @@ exports.createAuth = functions.auth.user().onCreate(event => {
   };
   return db.ref("accounts").push(account).then(function (data) {
     const accountId = data.key;
-    return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': user.displayName}).then(function () {
+    return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': 'Untitled team'}).then(function () {
       const claims = {
         accountId: accountId
       };
@@ -177,7 +177,7 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
         console.error('Update account failed:', error);
       });
     } else {
-      return admin.database.ref('accounts/' + accountId).remove().catch(error => {
+      return admin.database().ref('accounts/' + accountId).remove().catch(error => {
         console.error('Remove account failed:', error);
       });
     }
