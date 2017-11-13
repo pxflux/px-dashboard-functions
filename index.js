@@ -151,7 +151,7 @@ exports.updateUserAccountId = functions.database.ref('users/{userId}/accountId')
     const metadata = {
       refreshTime: event.timestamp
     };
-    return db.ref('metadata/' + event.params.userId).set(metadata);
+    return admin.database().ref('metadata/' + event.params.userId).set(metadata);
   });
 });
 
