@@ -167,14 +167,9 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
       const promisePool = new PromisePool(() => {
         if (userIds.length > 0) {
           const userId = userIds.pop();
-          const ref = admin.database().ref('/users/' + userId + '/accounts/' + accountId);
-          if (changed) {
-            return ref.set({
-              title: account.title
-            });
-          } else {
-            return Promise.resolve();
-          }
+          return admin.database().ref('/users/' + userId + '/accounts/' + accountId).set({
+            title: account.title
+          });
         }
       }, MAX_CONCURRENT);
 
