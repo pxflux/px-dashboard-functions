@@ -98,7 +98,7 @@ exports.createAuth = functions.auth.user().onCreate(event => {
     'users': {}
   };
   account['users'][user.uid] = {
-    'title': user.displayName,
+    'displayName': user.displayName,
     'photoUrl': user.photoURL
   };
   return db.ref("accounts").push(account).then(function (data) {
