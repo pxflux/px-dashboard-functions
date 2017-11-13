@@ -94,7 +94,7 @@ exports.createAuth = functions.auth.user().onCreate(event => {
   const user = event.data;
   const db = admin.database();
   const account = {
-    'title': user.displayName,
+    'title': 'Untitled team',
     'users': {}
   };
   account['users'][user.uid] = {
@@ -103,7 +103,7 @@ exports.createAuth = functions.auth.user().onCreate(event => {
   };
   return db.ref("accounts").push(account).then(function (data) {
     const accountId = data.key;
-    return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': 'Untitled team'}).then(function () {
+    return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': user.displayName}).then(function () {
       const claims = {
         accountId: accountId
       };
