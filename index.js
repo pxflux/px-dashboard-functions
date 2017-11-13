@@ -143,6 +143,18 @@ exports.deleteUser = functions.database.ref('users/{userId}').onDelete(event => 
   return null;
 });
 
+exports.updateUserAccountId = functions.database.ref('users/{userId}/accountId').onUpdate(event => {
+  const claims = {
+    accountId: event.data.val()
+  };
+  return admin.auth().setCustomUserClaims(event.params.userId, claims).then(() => {
+    const metadata = {
+      refreshTime: event.timestamp
+    };
+    return db.ref('metadata/' + event.params.userId).set(metadata);
+  });
+});
+
 exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(event => {
   const changed = event.data.child('title').changed() || event.data.child('users').changed();
   if (changed) {
