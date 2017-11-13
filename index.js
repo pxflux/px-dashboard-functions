@@ -186,19 +186,15 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
 });
 
 exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}').onUpdate(event => {
-  if (event.data.child('uid').exists()) {
-    const uid = event.data.child('uid').val();
+  if (event.data.child('user').exists()) {
+    const user = event.data.child('user').val();
     const accountId = event.data.child('accountId').val();
     return admin.database().ref('/invitations/' + event.data.key).remove().then(function () {
-      const claims = {
-        accountId: accountId
+      const data = {
+        'displayName': user.displayName,
+        'photoUrl': user.photoUrl
       };
-      return admin.auth().setCustomUserClaims(uid, claims).then(() => {
-        const metadata = {
-          refreshTime: event.timestamp
-        };
-        return db.ref('metadata/' + user.uid).set(metadata);
-      });
+      return admin.database().ref('accounts/' + accountId + '/users/' + user.uid).set(data);
     });
   }
   return null;
