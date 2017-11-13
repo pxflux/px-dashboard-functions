@@ -151,7 +151,10 @@ exports.updateUserAccountId = functions.database.ref('users/{userId}/accountId')
     accountId: event.data.val()
   };
   return admin.auth().setCustomUserClaims(event.params.userId, claims).then(() => {
-    return admin.database().ref('metadata/' + event.params.userId).set({refreshTime: event.timestamp});
+    return admin.database().ref('metadata/' + event.params.userId).set({
+      refreshTime: event.timestamp,
+      accountId: claims.accountId
+    });
   });
 });
 
