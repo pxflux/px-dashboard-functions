@@ -97,7 +97,10 @@ exports.createAuth = functions.auth.user().onCreate(event => {
     'title': user.displayName,
     'users': {}
   };
-  account['users'][user.uid] = true;
+  account['users'][user.uid] = {
+    'title': user.displayName,
+    'photoUrl': user.photoURL
+  };
   return db.ref("accounts").push(account).then(function (data) {
     const accountId = data.key;
     return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': user.displayName}).then(function () {
@@ -148,10 +151,7 @@ exports.updateUserAccountId = functions.database.ref('users/{userId}/accountId')
     accountId: event.data.val()
   };
   return admin.auth().setCustomUserClaims(event.params.userId, claims).then(() => {
-    const metadata = {
-      refreshTime: event.timestamp
-    };
-    return admin.database().ref('metadata/' + event.params.userId).set(metadata);
+    return admin.database().ref('metadata/' + event.params.userId).set({refreshTime: event.timestamp});
   });
 });
 
