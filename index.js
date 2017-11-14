@@ -167,26 +167,49 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
     const accountId = event.data.key;
     const account = event.data.val() || {};
 
-    // Sync users
+    const data = {
+      title: account.title
+    };
     const userIds = Object.keys(account.users || {});
-    if (userIds.length) {
+    const invitationIds = Object.keys(account.invitations || {});
+    if (userIds.length || invitationIds.length) {
       const promisePool = new PromisePool(() => {
+        // Sync users
         if (userIds.length > 0) {
           const userId = userIds.pop();
-          return admin.database().ref('/users/' + userId + '/accounts/' + accountId).set({
-            title: account.title
-          });
+          return admin.database().ref('/users/' + userId + '/accounts/' + accountId).set(data);
+        }
+        // Sync invitations
+        if (invitationIds.length > 0) {
+          const invitationId = invitationIds.pop();
+          return admin.database().ref('/invitations/' + invitationId + '/accounts/' + accountId).set(data);
         }
       }, MAX_CONCURRENT);
 
-      return promisePool.start().catch(error => {
-        console.error('Update account failed:', error);
-      });
-    } else {
-      return admin.database().ref('accounts/' + accountId).remove().catch(error => {
-        console.error('Remove account failed:', error);
-      });
+      return promisePool.start();
     }
+
+    if (userIds.length === 0) {
+      return admin.database().ref('accounts/' + accountId).remove();
+    }
+  }
+  return null;
+});
+
+exports.createInvitation = functions.database.ref('/invitations/{invitationId}').onCreate(event => {
+  const invitationId = event.data.key;
+  const invitation = event.data.val() || {};
+  if (invitation.account && invitation.account.id) {
+    return admin.database().ref('/accounts/' + invitation.account.id + '/invitations/' + invitationId).set(true);
+  }
+  return null;
+});
+
+exports.deleteInvitation = functions.database.ref('/invitations/{invitationId}').onDelete(event => {
+  const invitationId = event.data.key;
+  const invitation = event.data.val() || {};
+  if (invitation.account && invitation.account.id) {
+    return admin.database().ref('/accounts/' + invitation.account.id + '/invitations/' + invitationId).remove();
   }
   return null;
 });
