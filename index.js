@@ -11,7 +11,7 @@ const PromisePool = promisePool.PromisePool;
 // Maximum concurrent process.
 const MAX_CONCURRENT = 3;
 
-exports.updateArtists = functions.database.ref('/artists/{artistId}/').onWrite(event => {
+exports.updateArtists = functions.database.ref('/artists/{artistId}').onWrite(event => {
   const deleted = !event.data.exists();
   const changed = event.data.child('fullName').changed();
   if (deleted || changed) {
@@ -49,7 +49,7 @@ exports.updateArtists = functions.database.ref('/artists/{artistId}/').onWrite(e
   return null;
 });
 
-exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artworkId}/').onWrite(event => {
+exports.updateArtworks = functions.database.ref('/users/{userId}/artworks/{artworkId}').onWrite(event => {
   const deleted = !event.data.exists();
   const changed = event.data.child('title').changed() || event.data.child('artists').changed();
   if (deleted || changed) {
@@ -146,7 +146,10 @@ exports.deleteUser = functions.database.ref('users/{userId}').onDelete(event => 
   return null;
 });
 
-exports.updateUserAccountId = functions.database.ref('users/{userId}/accountId').onUpdate(event => {
+exports.updateUserAccountId = functions.database.ref('users/{userId}/accountId').onWrite(event => {
+  if (!event.data.exists()) {
+    return null;
+  }
   const claims = {
     accountId: event.data.val()
   };
