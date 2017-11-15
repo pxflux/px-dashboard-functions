@@ -182,7 +182,7 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
         // Sync invitations
         if (invitationIds.length > 0) {
           const invitationId = invitationIds.pop();
-          return admin.database().ref('/invitations/' + invitationId + '/accounts/' + accountId).set(data);
+          return admin.database().ref('/invitations/' + invitationId + '/account').update(data);
         }
       }, MAX_CONCURRENT);
 
