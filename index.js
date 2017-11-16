@@ -150,6 +150,22 @@ exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}')
   return null;
 });
 
+exports.updateArtworkPublished = functions.database.ref('/accounts/{accountId}/artworks/{artworkId}').onUpdate(event => {
+  if (!event.data.child('published').changed()) {
+    return null;
+  }
+  const accountId = event.params.accountId;
+  const artworkId = event.data.key;
+  const artwork = event.data.val() || {};
+  const ref = admin.database().ref('/artworks/' + artworkId);
+  if (data.published) {
+    delete artwork['published']
+    return ref.set(artwork)
+  } else {
+    return ref.remove()
+  }
+});
+
 exports.updateArtworks = functions.database.ref('/accounts/{accountId}/artworks/{artworkId}').onWrite(event => {
   if (!event.data.exists()) {
     return null;
@@ -231,6 +247,22 @@ exports.deleteArtwork = functions.database.ref('/accounts/{accountId}/artworks/{
   return promisePool.start();
 });
 
+exports.updateArtistPublished = functions.database.ref('/accounts/{accountId}/artists/{artistId}').onUpdate(event => {
+  if (!event.data.child('published').changed()) {
+    return null;
+  }
+  const accountId = event.params.accountId;
+  const artistId = event.data.key;
+  const artist = event.data.val() || {};
+  const ref = admin.database().ref('/artists/' + artistId);
+  if (data.published) {
+    delete artist['published']
+    return ref.set(artist)
+  } else {
+    return ref.remove()
+  }
+});
+
 exports.updateArtist = functions.database.ref('/accounts/{accountId}/artists/{artistId}').onUpdate(event => {
   if (!event.data.child('fullName').changed()) {
     return null;
@@ -273,6 +305,22 @@ exports.deleteArtist = functions.database.ref('/accounts/{accountId}/artists/{ar
     }
   }, MAX_CONCURRENT);
   return promisePool.start();
+});
+
+exports.updateShowPublished = functions.database.ref('/accounts/{accountId}/shows/{showId}').onUpdate(event => {
+  if (!event.data.child('published').changed()) {
+    return null;
+  }
+  const accountId = event.params.accountId;
+  const showId = event.data.key;
+  const show = event.data.val() || {};
+  const ref = admin.database().ref('/shows/' + showId);
+  if (data.published) {
+    delete show['published']
+    return ref.set(show)
+  } else {
+    return ref.remove()
+  }
 });
 
 exports.updateShow = functions.database.ref('/accounts/{accountId}/shows/{showId}').onUpdate(event => {
@@ -343,19 +391,40 @@ exports.deleteShow = functions.database.ref('/accounts/{accountId}/shows/{showId
   return promisePool.start();
 });
 
+exports.updatePlacePublished = functions.database.ref('/accounts/{accountId}/places/{placeId}').onUpdate(event => {
+  if (!event.data.child('published').changed()) {
+    return null;
+  }
+  const accountId = event.params.accountId;
+  const placeId = event.data.key;
+  const place = event.data.val() || {};
+  const ref = admin.database().ref('/places/' + placeId);
+  if (data.published) {
+    return ref.set(place)
+  } else {
+    return ref.remove()
+  }
+});
+
 exports.updatePlace = functions.database.ref('/accounts/{accountId}/places/{placeId}').onUpdate(event => {
-  if (!event.data.child('title').changed()) {
+  const changed = ['title', 'image'].filter(name => event.data.child(name).changed()).length > 0
+  if (!changed) {
     return null;
   }
   const accountId = event.params.accountId;
   const placeId = event.data.key;
   const place = event.data.val() || {};
 
+  const publicIds = place.published ? [placeId] : [];
   const showIds = Object.keys(place.shows || {});
   if (showIds.length === 0) {
     return null;
   }
+  delete place['published']
   const promisePool = new PromisePool(() => {
+    if (publicIds.length > 0) {
+      return db.ref('/places/' + publicIds.pop()).set(place);
+    }
     if (showIds.length > 0) {
       const showId = showIds.pop();
       const path = '/accounts/' + accountId + '/shows/' + showId + '/places/' + placeId;
@@ -372,16 +441,19 @@ exports.deletePlace = functions.database.ref('/accounts/{accountId}/places/{plac
   const placeId = event.data.key;
   const place = event.data.val() || {};
 
+  const publicIds = place.published ? [placeId] : [];
   const showIds = Object.keys(place.shows || {});
   if (showIds.length === 0) {
     return null;
   }
+  const db = admin.database();
   const promisePool = new PromisePool(() => {
+    if (publicIds.length > 0) {
+      return db.ref('/places/' + publicIds.pop()).remove();
+    }
     // Sync shows
     if (showIds.length > 0) {
-      const showId = showIds.pop();
-      const path = '/accounts/' + accountId + '/shows/' + showId + '/places/' + placeId;
-      return admin.database().ref(path).remove();
+      return db.ref('/accounts/' + accountId + '/shows/' + showIds.pop() + '/places/' + placeId).remove();
     }
   }, MAX_CONCURRENT);
   return promisePool.start();
