@@ -250,7 +250,7 @@ exports.deleteArtwork = functions.database.ref('/accounts/{accountId}/artworks/{
 });
 
 exports.updateArtist = functions.database.ref('/accounts/{accountId}/artists/{artistId}').onUpdate(event => {
-  const changed = ['published', 'fullName', 'image'].filter(name => event.data.child(name).changed()).length > 0
+  const changed = ['published', 'fullName', 'image', 'artworks'].filter(name => event.data.child(name).changed()).length > 0
   if (!changed) {
     return null;
   }
@@ -404,7 +404,7 @@ exports.deleteShow = functions.database.ref('/accounts/{accountId}/shows/{showId
 });
 
 exports.updatePlace = functions.database.ref('/accounts/{accountId}/places/{placeId}').onUpdate(event => {
-  const changed = event.data.child('published').changed() || event.data.child('title').changed() || event.data.child('image').changed()
+  const changed = ['published', 'title', 'image'].filter(name => event.data.child(name).changed()).length > 0
   if (!changed) {
     return null;
   }
