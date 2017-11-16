@@ -408,7 +408,7 @@ exports.deleteShow = functions.database.ref('/accounts/{accountId}/shows/{showId
   const publicIds = show.published ? [showId] : [];
   const artworkIds = Object.keys(show.artworks || {});
   const placeIds = Object.keys(show.places || {});
-  if (artworkIds.length === 0 && placeIds.length === 0) {
+  if (files.length === 0 && publicIds.length === 0 && artworkIds.length === 0 && placeIds.length === 0) {
     return null;
   }
   const promisePool = new PromisePool(() => {
@@ -447,7 +447,7 @@ exports.updatePlace = functions.database.ref('/accounts/{accountId}/places/{plac
   const publicIds = place.published ? [placeId] : [];
   const hideIds = place.published ? [] : [placeId];
   const showIds = Object.keys(place.shows || {});
-  if (showIds.length === 0) {
+  if (publicIds.length === 0 && hideIds.length === 0 && showIds.length === 0) {
     return null;
   }
   const promisePool = new PromisePool(() => {
@@ -478,7 +478,7 @@ exports.deletePlace = functions.database.ref('/accounts/{accountId}/places/{plac
   const files = place.image ? [place.image.storageUri] : [];
   const publicIds = place.published ? [placeId] : [];
   const showIds = Object.keys(place.shows || {});
-  if (showIds.length === 0) {
+  if (files.length === 0 && publicIds.length === 0 && showIds.length === 0) {
     return null;
   }
   const promisePool = new PromisePool(() => {
