@@ -435,23 +435,8 @@ exports.deleteShow = functions.database.ref('/accounts/{accountId}/shows/{showId
   return promisePool.start();
 });
 
-exports.updatePlacePublished = functions.database.ref('/accounts/{accountId}/places/{placeId}').onUpdate(event => {
-  if (!event.data.child('published').changed()) {
-    return null;
-  }
-  const accountId = event.params.accountId;
-  const placeId = event.data.key;
-  const place = event.data.val() || {};
-  const ref = admin.database().ref('/places/' + placeId);
-  if (place.published) {
-    return ref.set(place)
-  } else {
-    return ref.remove()
-  }
-});
-
 exports.updatePlace = functions.database.ref('/accounts/{accountId}/places/{placeId}').onUpdate(event => {
-  const changed = ['title', 'image'].filter(name => event.data.child(name).changed()).length > 0
+  const changed = event.data.child('published').changed() || event.data.child('title').changed() || event.data.child('image').changed()
   if (!changed) {
     return null;
   }
@@ -460,17 +445,20 @@ exports.updatePlace = functions.database.ref('/accounts/{accountId}/places/{plac
   const place = event.data.val() || {};
 
   const publicIds = place.published ? [placeId] : [];
+  const hideIds = place.published ? [] : [placeId];
   const showIds = Object.keys(place.shows || {});
   if (showIds.length === 0) {
     return null;
   }
-  delete place['published']
   const promisePool = new PromisePool(() => {
     const db = admin.database();
     if (publicIds.length > 0) {
-      delete place['published'];
       const publicId = publicIds.pop();
       return db.ref('/places/' + publicId).set(place);
+    }
+    if (hideIds.length > 0) {
+      const hideId = hideIds.pop();
+      return db.ref('/places/' + hideId).remove();
     }
     if (showIds.length > 0) {
       const showId = showIds.pop();
