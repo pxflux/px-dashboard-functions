@@ -158,7 +158,7 @@ exports.updateArtworkPublished = functions.database.ref('/accounts/{accountId}/a
   const artworkId = event.data.key;
   const artwork = event.data.val() || {};
   const ref = admin.database().ref('/artworks/' + artworkId);
-  if (data.published) {
+  if (artwork.published) {
     delete artwork['published']
     return ref.set(artwork)
   } else {
@@ -255,7 +255,7 @@ exports.updateArtistPublished = functions.database.ref('/accounts/{accountId}/ar
   const artistId = event.data.key;
   const artist = event.data.val() || {};
   const ref = admin.database().ref('/artists/' + artistId);
-  if (data.published) {
+  if (artist.published) {
     delete artist['published']
     return ref.set(artist)
   } else {
@@ -315,7 +315,7 @@ exports.updateShowPublished = functions.database.ref('/accounts/{accountId}/show
   const showId = event.data.key;
   const show = event.data.val() || {};
   const ref = admin.database().ref('/shows/' + showId);
-  if (data.published) {
+  if (show.published) {
     delete show['published']
     return ref.set(show)
   } else {
@@ -399,7 +399,7 @@ exports.updatePlacePublished = functions.database.ref('/accounts/{accountId}/pla
   const placeId = event.data.key;
   const place = event.data.val() || {};
   const ref = admin.database().ref('/places/' + placeId);
-  if (data.published) {
+  if (place.published) {
     return ref.set(place)
   } else {
     return ref.remove()
