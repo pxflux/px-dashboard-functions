@@ -170,9 +170,10 @@ exports.updateArtworks = functions.database.ref('/accounts/{accountId}/artworks/
   if (!event.data.exists()) {
     return null;
   }
-  const changed = event.data.child('title').changed()
-    || event.data.child('artists').changed()
-    || event.data.child('shows').changed();
+  const changed = ['title', 'artists', 'shows'].filter(name => event.data.child(name).changed()).length > 0
+  if (!changed) {
+    return null;
+  }
   if (!changed) {
     return null;
   }
@@ -276,7 +277,8 @@ exports.updateArtistPublished = functions.database.ref('/accounts/{accountId}/ar
 });
 
 exports.updateArtist = functions.database.ref('/accounts/{accountId}/artists/{artistId}').onUpdate(event => {
-  if (!event.data.child('fullName').changed()) {
+  const changed = ['fullName', 'image'].filter(name => event.data.child(name).changed()).length > 0
+  if (!changed) {
     return null;
   }
   const accountId = event.params.accountId;
@@ -352,7 +354,8 @@ exports.updateShowPublished = functions.database.ref('/accounts/{accountId}/show
 });
 
 exports.updateShow = functions.database.ref('/accounts/{accountId}/shows/{showId}').onUpdate(event => {
-  if (!event.data.child('title').changed()) {
+  const changed = ['title', 'image', 'places'].filter(name => event.data.child(name).changed()).length > 0
+  if (!changed) {
     return null;
   }
   const accountId = event.params.accountId;
