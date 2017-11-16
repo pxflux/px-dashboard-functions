@@ -150,27 +150,11 @@ exports.acceptInvitation = functions.database.ref('/invitations/{invitationId}')
   return null;
 });
 
-exports.updateArtworkPublished = functions.database.ref('/accounts/{accountId}/artworks/{artworkId}').onUpdate(event => {
-  if (!event.data.child('published').changed()) {
-    return null;
-  }
-  const accountId = event.params.accountId;
-  const artworkId = event.data.key;
-  const artwork = event.data.val() || {};
-  const ref = admin.database().ref('/artworks/' + artworkId);
-  if (artwork.published) {
-    delete artwork['published']
-    return ref.set(artwork)
-  } else {
-    return ref.remove()
-  }
-});
-
 exports.updateArtworks = functions.database.ref('/accounts/{accountId}/artworks/{artworkId}').onWrite(event => {
   if (!event.data.exists()) {
     return null;
   }
-  const changed = ['title', 'artists', 'shows'].filter(name => event.data.child(name).changed()).length > 0
+  const changed = ['published', 'title', 'artists', 'shows'].filter(name => event.data.child(name).changed()).length > 0
   if (!changed) {
     return null;
   }
@@ -183,11 +167,12 @@ exports.updateArtworks = functions.database.ref('/accounts/{accountId}/artworks/
   const prevArtwork = event.data.previous.val() || {};
 
   const publicIds = artwork.published ? [artworkId] : [];
+  const hideIds = artwork.published ? [] : [artworkId];
   const artistIds = Object.keys(artwork.artists || {});
   const showIds = Object.keys(artwork.shows || {});
   const prevArtistIds = Object.keys(prevArtwork.artists || {}).filter(val => artistIds.indexOf(val) == -1)
   const prevShowIds = Object.keys(prevArtwork.shows || {}).filter(val => showIds.indexOf(val) == -1)
-  if (artistIds.length === 0 && showIds.length === 0 && prevArtistIds.length === 0 && prevShowIds.length === 0) {
+  if (publicIds.length === 0 && hideIds.length === 0 && artistIds.length === 0 && showIds.length === 0 && prevArtistIds.length === 0 && prevShowIds.length === 0) {
     return null;
   }
 
@@ -197,6 +182,10 @@ exports.updateArtworks = functions.database.ref('/accounts/{accountId}/artworks/
       delete artwork['published'];
       const publicId = publicIds.pop();
       return db.ref('/artworks/' + publicId).set(artwork);
+    }
+    if (hideIds.length > 0) {
+      const hideId = hideIds.pop();
+      return db.ref('/artworks/' + hideId).remove();
     }
     // Sync artists
     if (artistIds.length > 0) {
@@ -233,7 +222,7 @@ exports.deleteArtwork = functions.database.ref('/accounts/{accountId}/artworks/{
   const publicIds = artwork.published ? [artworkId] : [];
   const artistIds = Object.keys(artwork.artists || {});
   const showIds = Object.keys(artwork.shows || {});
-  if (artistIds.length === 0 && showIds.length === 0) {
+  if (files.length === 0 && publicIds.length === 0 && artistIds.length === 0 && showIds.length === 0) {
     return null;
   }
   const promisePool = new PromisePool(() => {
@@ -260,24 +249,8 @@ exports.deleteArtwork = functions.database.ref('/accounts/{accountId}/artworks/{
   return promisePool.start();
 });
 
-exports.updateArtistPublished = functions.database.ref('/accounts/{accountId}/artists/{artistId}').onUpdate(event => {
-  if (!event.data.child('published').changed()) {
-    return null;
-  }
-  const accountId = event.params.accountId;
-  const artistId = event.data.key;
-  const artist = event.data.val() || {};
-  const ref = admin.database().ref('/artists/' + artistId);
-  if (artist.published) {
-    delete artist['published']
-    return ref.set(artist)
-  } else {
-    return ref.remove()
-  }
-});
-
 exports.updateArtist = functions.database.ref('/accounts/{accountId}/artists/{artistId}').onUpdate(event => {
-  const changed = ['fullName', 'image'].filter(name => event.data.child(name).changed()).length > 0
+  const changed = ['published', 'fullName', 'image'].filter(name => event.data.child(name).changed()).length > 0
   if (!changed) {
     return null;
   }
@@ -286,16 +259,20 @@ exports.updateArtist = functions.database.ref('/accounts/{accountId}/artists/{ar
   const artist = event.data.val() || {};
 
   const publicIds = artist.published ? [artistId] : [];
+  const hideIds = artist.published ? [] : [artistId];
   const artworkIds = Object.keys(artist.artworks || {});
-  if (artworkIds.length === 0) {
+  if (publicIds.length === 0 && hideIds.length === 0 && artworkIds.length === 0) {
     return null;
   }
   const promisePool = new PromisePool(() => {
     const db = admin.database();
     if (publicIds.length > 0) {
-      delete artist['published'];
       const publicId = publicIds.pop();
       return db.ref('/artists/' + publicId).set(artist);
+    }
+    if (hideIds.length > 0) {
+      const hideId = hideIds.pop();
+      return db.ref('/artists/' + hideId).remove();
     }
     if (artworkIds.length > 0) {
       const artworkId = artworkIds.pop();
@@ -315,7 +292,7 @@ exports.deleteArtist = functions.database.ref('/accounts/{accountId}/artists/{ar
   const files = artist.image ? [artist.image.storageUri] : [];
   const publicIds = artist.published ? [artistId] : [];
   const artworkIds = Object.keys(artist.artworks || {});
-  if (artworkIds.length === 0) {
+  if (files.length === 0 && publicIds.length === 0 && artworkIds.length === 0) {
     return null;
   }
   const promisePool = new PromisePool(() => {
@@ -337,24 +314,11 @@ exports.deleteArtist = functions.database.ref('/accounts/{accountId}/artists/{ar
   return promisePool.start();
 });
 
-exports.updateShowPublished = functions.database.ref('/accounts/{accountId}/shows/{showId}').onUpdate(event => {
-  if (!event.data.child('published').changed()) {
+exports.updateShow = functions.database.ref('/accounts/{accountId}/shows/{showId}').onWrite(event => {
+  if (!event.data.exists()) {
     return null;
   }
-  const accountId = event.params.accountId;
-  const showId = event.data.key;
-  const show = event.data.val() || {};
-  const ref = admin.database().ref('/shows/' + showId);
-  if (show.published) {
-    delete show['published']
-    return ref.set(show)
-  } else {
-    return ref.remove()
-  }
-});
-
-exports.updateShow = functions.database.ref('/accounts/{accountId}/shows/{showId}').onUpdate(event => {
-  const changed = ['title', 'image', 'places'].filter(name => event.data.child(name).changed()).length > 0
+  const changed = ['published', 'title', 'image', 'places'].filter(name => event.data.child(name).changed()).length > 0
   if (!changed) {
     return null;
   }
@@ -364,18 +328,22 @@ exports.updateShow = functions.database.ref('/accounts/{accountId}/shows/{showId
   const prevShow = event.data.previous.val() || {};
 
   const publicIds = show.published ? [showId] : [];
+  const hideIds = show.published ? [] : [showId];
   const artworkIds = Object.keys(show.artworks || {});
   const placeIds = Object.keys(show.places || {});
   const prevPlaceIds = Object.keys(prevShow.places || {}).filter(val => placeIds.indexOf(val) == -1)
-  if (artworkIds.length === 0 && placeIds.length === 0 && prevPlaceIds.length === 0) {
+  if (publicIds.length === 0 && hideIds.length === 0 && artworkIds.length === 0 && placeIds.length === 0 && prevPlaceIds.length === 0) {
     return null;
   }
   const promisePool = new PromisePool(() => {
     const db = admin.database();
     if (publicIds.length > 0) {
-      delete show['published'];
       const publicId = publicIds.pop();
       return db.ref('/shows/' + publicId).set(show);
+    }
+    if (hideIds.length > 0) {
+      const hideId = hideIds.pop();
+      return db.ref('/shows/' + hideId).remove();
     }
     // Sync artworks
     if (artworkIds.length > 0) {
