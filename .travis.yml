@@ -1,17 +1,17 @@
 language: node_js
 node_js:
-  - "8"
-
+- '8'
 branches:
   only:
-    - master
-
+  - master
+before_install:
+- openssl aes-256-cbc -K $encrypted_7688485ae55e_key -iv $encrypted_7688485ae55e_iv
+  -in service-account.json.enc -out service-account.json -d
 deploy:
   skip_cleanup: true
   provider: firebase
   token:
-    secure: "Xb4gXswKFVgHitnos6LTWYjV/k6k3zkP45eojqMRwHotHDa3LZM4bMr+k/cGiS1Yuk2K90FNKUeopGRp4J8B8UNVG0KSl2cjTZo0026U9Fe5OVLIXA4uAaGhNPhcCiU3YCmNGW9cOH/E8SDd8YFnegMxQZEB+u2HZIHf+abXQ7nKVD4MuzalZzSh9gfPHe2tvlhZrEeO7b/iXYkcu0uFQ+3E/LDNiqy/m5cyxxyvwqhDEa4t1+o0jwqTGmpZpM9LiNsR2YPGHExgp5QmxEuzs68Jy01CH+dI/O9sMphNTtD9BEKNmcLfV/ywAGjcX9VTNpc10oW30zubUde5EF3UagTyywb2DvmlfpEmIKRl0VCxgxj6IaWR1mMeXe1JilviQ0FUNIiJ688/HvpbSXtR03/HTdhl5z3oJNUGhBWP3V2RBxEkktEL/mGrdNCf9uWLaDGR5Q8Y+sG6OrQJ0RKuswV1KOnfrhBl6uiOmnrYrgy9LIdg6O6vG6+g2LAcTUvYLBEHRDU7ZSjFX173eh4NzyUbfY9UY/TQe6pMLCkl7KYmsrA2scnQvAhjorksYVjGLibdiDd8i/gvcizpK7HSq2A97HsBBeG7Xyed3jgN1Z+IdQWYRFLl+Hmh2Xf2vCWKJikOVEM+ClMIXu6iAfnzS3jw/5o/bhUQQCUef5mqnJY="
-
+    secure: Xb4gXswKFVgHitnos6LTWYjV/k6k3zkP45eojqMRwHotHDa3LZM4bMr+k/cGiS1Yuk2K90FNKUeopGRp4J8B8UNVG0KSl2cjTZo0026U9Fe5OVLIXA4uAaGhNPhcCiU3YCmNGW9cOH/E8SDd8YFnegMxQZEB+u2HZIHf+abXQ7nKVD4MuzalZzSh9gfPHe2tvlhZrEeO7b/iXYkcu0uFQ+3E/LDNiqy/m5cyxxyvwqhDEa4t1+o0jwqTGmpZpM9LiNsR2YPGHExgp5QmxEuzs68Jy01CH+dI/O9sMphNTtD9BEKNmcLfV/ywAGjcX9VTNpc10oW30zubUde5EF3UagTyywb2DvmlfpEmIKRl0VCxgxj6IaWR1mMeXe1JilviQ0FUNIiJ688/HvpbSXtR03/HTdhl5z3oJNUGhBWP3V2RBxEkktEL/mGrdNCf9uWLaDGR5Q8Y+sG6OrQJ0RKuswV1KOnfrhBl6uiOmnrYrgy9LIdg6O6vG6+g2LAcTUvYLBEHRDU7ZSjFX173eh4NzyUbfY9UY/TQe6pMLCkl7KYmsrA2scnQvAhjorksYVjGLibdiDd8i/gvcizpK7HSq2A97HsBBeG7Xyed3jgN1Z+IdQWYRFLl+Hmh2Xf2vCWKJikOVEM+ClMIXu6iAfnzS3jw/5o/bhUQQCUef5mqnJY=
 cache:
   directories:
-    - "node_modules"
+  - node_modules

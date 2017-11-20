@@ -3,7 +3,12 @@
 const functions = require('firebase-functions');
 
 const admin = require('firebase-admin');
-admin.initializeApp(functions.config().firebase);
+const serviceAccount = require('./service-account.json');
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: `https://${process.env.GCLOUD_PROJECT}.firebaseio.com`,
+  storageBucket: `${process.env.GCLOUD_PROJECT}.appspot.com`
+});
 
 const promisePool = require('es6-promise-pool');
 const PromisePool = promisePool.PromisePool;
