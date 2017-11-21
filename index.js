@@ -159,7 +159,7 @@ exports.updateArtworks = functions.database.ref('/accounts/{accountId}/artworks/
   if (!event.data.exists()) {
     return null;
   }
-  const changed = ['published', 'url', 'title', 'year', 'artists', 'shows'].filter(name => event.data.child(name).changed()).length > 0
+  const changed = ['published', 'url', 'title', 'description', 'year', 'vimeoId', 'artists', 'shows'].filter(name => event.data.child(name).changed()).length > 0
   if (!changed) {
     return null;
   }
