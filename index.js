@@ -528,6 +528,7 @@ exports.updatePlayerPins = functions.database.ref('player-pins/{pin}').onWrite(e
   if (!changed) {
     return null;
   }
+  const pin = event.params.pin;
   const data = event.data.val() || {};
   if (!data.accountId) {
     return null;
@@ -548,6 +549,9 @@ exports.updatePlayerPins = functions.database.ref('player-pins/{pin}').onWrite(e
     };
     return admin.auth().createCustomToken(user.uid, claims)
   }).then(function (authToken) {
-    return event.data.ref().update({accessToken: authToken});
+    return admin.database().ref('player-pins/' + pin).update({
+      playerId: playerId,
+      accessToken: authToken
+    });
   });
 });
