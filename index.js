@@ -12,6 +12,7 @@ admin.initializeApp({
 
 const promisePool = require('es6-promise-pool');
 const PromisePool = promisePool.PromisePool;
+const crypto = require('crypto');
 
 // Maximum concurrent process.
 const MAX_CONCURRENT = 3;
@@ -472,3 +473,43 @@ exports.deletePlace = functions.database.ref('/accounts/{accountId}/places/{plac
   }, MAX_CONCURRENT);
   return promisePool.start();
 });
+
+// Verify pin and exchange for Firebase Custom Auth token
+exports.verifyPin = functions.https.onRequest((req, res) => {
+  if (req.method !== 'POST') {
+    return res.sendStatus(403);
+  }
+  const pin = req.body.pin;
+  if (pin === undefined) {
+    return res.sendStatus(400);
+  }
+  return admin.database().ref('/player-pins/' + pin).once('value').then(function (snapshot) {
+    if (!snapshot.exists()) {
+      throw Error('', 400);
+    }
+    const data = {
+      accountId: snapshot.accountId,
+      playerId: snapshot.playerId || crypto.randomBytes(20).toString('hex')
+    };
+    return snapshot.ref.remove().then(function () {
+      return data;
+    })
+  }).then(function (data) {
+    const uid = `player:${data.playerId}`;
+    return admin.auth().getUser(uid).catch(error => {
+      if (error.code === 'auth/user-not-found') {
+        return admin.auth().createUser({
+          uid: uid
+        });
+      }
+      // If error other than auth/user-not-found occurred, fail the whole login process
+      throw error;
+    }).then(function (user) {
+      return admin.auth().createCustomToken(user.uid)
+    });
+  }).then(function (authToken) {
+    return res.status(200).send({token: authToken});
+  }).catch(function (error) {
+    return res.sendStatus(error.id);
+  });
+})
