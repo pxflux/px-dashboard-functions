@@ -19,6 +19,9 @@ const MAX_CONCURRENT = 3;
 
 exports.createAuth = functions.auth.user().onCreate(event => {
   const user = event.data;
+  if (user.uid.startsWith('player:')) {
+    return null;
+  }
   const db = admin.database();
   const account = {
     'title': 'Untitled team',
@@ -46,6 +49,9 @@ exports.createAuth = functions.auth.user().onCreate(event => {
 
 exports.deleteAuth = functions.auth.user().onDelete(event => {
   const uid = event.data.uid;
+  if (uid.startsWith('player:')) {
+    return null;
+  }
   return Promise.all([
     admin.database().ref('/users/' + uid).remove(),
     admin.database().ref('/metadata/' + uid).remove()
@@ -522,11 +528,12 @@ exports.updatePlayerPins = functions.database.ref('player-pins/{pin}').onWrite(e
   if (!changed) {
     return null;
   }
-  const data = event.data.val();
-  if (!data) {
+  const data = event.data.val() || {};
+  if (!data.accountId) {
     return null;
   }
-  const uid = `player:${data.playerId}`;
+  const playerId = data.playerId || crypto.randomBytes(20).toString('hex')
+  const uid = `player:${playerId}`;
   return admin.auth().getUser(uid).catch(error => {
     if (error.code === 'auth/user-not-found') {
       return admin.auth().createUser({
