@@ -513,3 +513,34 @@ exports.verifyPin = functions.https.onRequest((req, res) => {
     return res.sendStatus(error.id);
   });
 })
+
+exports.updatePlayerPins = functions.database.ref('player-pins/{pin}').onWrite(event => {
+  if (!event.data.exists()) {
+    return null;
+  }
+  const changed = ['accountId'].filter(name => event.data.child(name).changed()).length > 0
+  if (!changed) {
+    return null;
+  }
+  const data = event.data.val();
+  if (!data) {
+    return null;
+  }
+  const uid = `player:${data.playerId}`;
+  return admin.auth().getUser(uid).catch(error => {
+    if (error.code === 'auth/user-not-found') {
+      return admin.auth().createUser({
+        uid: uid
+      });
+    }
+    // If error other than auth/user-not-found occurred, fail the whole login process
+    throw error;
+  }).then(function (user) {
+    const claims = {
+      accountId: event.data.val()
+    };
+    return admin.auth().createCustomToken(user.uid, claims)
+  }).then(function (authToken) {
+    return event.data.ref().update({accessToken: authToken});
+  });
+});
