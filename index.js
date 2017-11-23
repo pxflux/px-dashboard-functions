@@ -480,51 +480,11 @@ exports.deletePlace = functions.database.ref('/accounts/{accountId}/places/{plac
   return promisePool.start();
 });
 
-// Verify pin and exchange for Firebase Custom Auth token
-exports.verifyPin = functions.https.onRequest((req, res) => {
-  if (req.method !== 'POST') {
-    return res.sendStatus(403);
-  }
-  const pin = req.body.pin;
-  if (pin === undefined) {
-    return res.sendStatus(400);
-  }
-  return admin.database().ref('/player-pins/' + pin).once('value').then(function (snapshot) {
-    if (!snapshot.exists()) {
-      throw Error('', 400);
-    }
-    const data = {
-      accountId: snapshot.accountId,
-      playerId: snapshot.playerId || crypto.randomBytes(20).toString('hex')
-    };
-    return snapshot.ref.remove().then(function () {
-      return data;
-    })
-  }).then(function (data) {
-    const uid = `player:${data.playerId}`;
-    return admin.auth().getUser(uid).catch(error => {
-      if (error.code === 'auth/user-not-found') {
-        return admin.auth().createUser({
-          uid: uid
-        });
-      }
-      // If error other than auth/user-not-found occurred, fail the whole login process
-      throw error;
-    }).then(function (user) {
-      return admin.auth().createCustomToken(user.uid)
-    });
-  }).then(function (authToken) {
-    return res.status(200).send({token: authToken});
-  }).catch(function (error) {
-    return res.sendStatus(error.id);
-  });
-})
-
 exports.updatePlayerPins = functions.database.ref('player-pins/{pin}').onWrite(event => {
   if (!event.data.exists()) {
     return null;
   }
-  const changed = ['accountId'].filter(name => event.data.child(name).changed()).length > 0
+  const changed = event.data.child('accountId').changed()
   if (!changed) {
     return null;
   }
@@ -544,10 +504,7 @@ exports.updatePlayerPins = functions.database.ref('player-pins/{pin}').onWrite(e
     // If error other than auth/user-not-found occurred, fail the whole login process
     throw error;
   }).then(function (user) {
-    const claims = {
-      accountId: event.data.val()
-    };
-    return admin.auth().createCustomToken(user.uid, claims)
+    return admin.auth().createCustomToken(user.uid)
   }).then(function (authToken) {
     return admin.database().ref('player-pins/' + pin).update({
       playerId: playerId,
