@@ -31,15 +31,12 @@ exports.createAuth = functions.auth.user().onCreate(event => {
   }
   return db.ref('accounts').push(account).then(function (snapshot) {
     const accountId = snapshot.key
-    return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': user.displayName}).then(function () {
+    return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': account.title}).then(function () {
       const claims = {
         accountId: accountId
       }
       return admin.auth().setCustomUserClaims(user.uid, claims).then(() => {
-        const metadata = {
-          refreshTime: event.timestamp
-        }
-        return db.ref('metadata/' + user.uid).set(metadata)
+        return db.ref('metadata/' + user.uid).set({refreshTime: event.timestamp})
       })
     })
   })
@@ -86,29 +83,51 @@ exports.updateUserAccountId = functions.database.ref('users/{userId}/accountId')
 })
 
 exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(event => {
-  const changed = event.data.child('title').changed() || event.data.child('users').changed()
-  if (changed) {
-    const accountId = event.data.key
-    const account = event.data.val() || {}
+  const accountId = event.data.key
+  const previous = event.data.previous.val() || {}
+  const account = event.data.val() || {}
 
-    const updates = {}
+  const updates = {}
+  if (Object.keys(account.users || {}).length === 0) {
+    updates['accounts/' + accountId] = null
+  } else {
     // Sync users
-    Object.keys(account.users || {}).forEach(userId => {
-      updates['/users/' + userId + '/accounts/' + accountId] = {title: account.title}
-    })
+    const userIds = {}
+    if (event.data.child('users').changed()) {
+      Object.keys(previous.users || {}).forEach(userId => userIds[userId] = null)
+      Object.keys(account.users || {}).forEach(userId => delete userIds[userId])
+    }
+
     // Sync invitations
-    Object.keys(account.invitations || {}).forEach(invitationId => {
-      updates['/invitations/' + invitationId + '/account/title'] = account.title
+    const invitationIds = {}
+    if (event.data.child('invitations').changed()) {
+      Object.keys(previous.invitations || {}).forEach(invitationId => invitationIds[invitationId] = null)
+      Object.keys(account.invitations || {}).forEach(invitationId => delete invitationIds[invitationId])
+    }
+
+    if (event.data.child('title').changed()) {
+      // Sync users
+      Object.keys(account.users || {}).forEach(userId => {
+        userIds[userId] = {title: account.title}
+      })
+      // Sync invitations
+      Object.keys(account.invitations || {}).forEach(invitationId => {
+        invitationIds[invitationId] = {title: account.title}
+      })
+    }
+
+    Object.keys(userIds).forEach(userId => {
+      updates['/users/' + userId + '/accounts/' + accountId] = userIds[userId]
     })
-    if (userIds.length === 0) {
-      updates['accounts/' + accountId] = null
-    }
-    if (Object.keys(updates).length === 0) {
-      return null
-    }
-    return admin.database().ref().update(updates)
+    Object.keys(invitationIds).forEach(invitationId => {
+      updates['/invitations/' + invitationId + '/accounts/' + accountId] = invitationIds[invitationId]
+    })
   }
-  return null
+
+  if (Object.keys(updates).length === 0) {
+    return null
+  }
+  return admin.database().ref().update(updates)
 })
 
 exports.createInvitation = functions.database.ref('/invitations/{invitationId}').onCreate(event => {
