@@ -29,8 +29,8 @@ exports.createAuth = functions.auth.user().onCreate(event => {
     'displayName': user.displayName,
     'photoUrl': user.photoURL
   }
-  return db.ref('accounts').push(account).then(function (data) {
-    const accountId = data.key
+  return db.ref('accounts').push(account).then(function (snapshot) {
+    const accountId = snapshot.key
     return db.ref('users/' + user.uid + '/accounts/' + accountId).set({'title': user.displayName}).then(function () {
       const claims = {
         accountId: accountId
@@ -46,35 +46,28 @@ exports.createAuth = functions.auth.user().onCreate(event => {
 })
 
 exports.deleteAuth = functions.auth.user().onDelete(event => {
-  const uid = event.data.uid
+  const uid = event.data.previous.uid
   if (uid.startsWith('player:')) {
     return null
   }
-  return Promise.all([
-    admin.database().ref('/users/' + uid).remove(),
-    admin.database().ref('/metadata/' + uid).remove()
-  ])
+  const updates = {}
+  updates['/users/' + uid] = null
+  updates['/metadata/' + uid] = null
+  return admin.database().ref().update(updates)
 })
 
 exports.deleteUser = functions.database.ref('users/{userId}').onDelete(event => {
   const userId = event.data.key
-  const user = event.data.val() || {}
+  const user = event.data.previous.val() || {}
 
-  // Sync accounts
-  const accountIds = Object.keys(user.accounts || {})
-  if (accountIds.length) {
-    const promisePool = new PromisePool(() => {
-      if (accountIds.length > 0) {
-        const accountId = accountIds.pop()
-        return admin.database().ref('/accounts/' + accountId + '/users/' + userId).remove()
-      }
-    }, MAX_CONCURRENT)
-
-    return promisePool.start().catch(error => {
-      console.error('Update accounts failed:', error)
-    })
+  const updates = {}
+  Object.keys(user.accounts || {}).forEach(accountId => {
+    updates['/accounts/' + accountId + '/users/' + userId] = null
+  })
+  if (Object.keys(updates).length === 0) {
+    return null
   }
-  return null
+  return admin.database().ref().update(updates)
 })
 
 exports.updateUserAccountId = functions.database.ref('users/{userId}/accountId').onWrite(event => {
@@ -98,31 +91,22 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
     const accountId = event.data.key
     const account = event.data.val() || {}
 
-    const data = {
-      title: account.title
-    }
-    const userIds = Object.keys(account.users || {})
-    const invitationIds = Object.keys(account.invitations || {})
-    if (userIds.length || invitationIds.length) {
-      const promisePool = new PromisePool(() => {
-        // Sync users
-        if (userIds.length > 0) {
-          const userId = userIds.pop()
-          return admin.database().ref('/users/' + userId + '/accounts/' + accountId).set(data)
-        }
-        // Sync invitations
-        if (invitationIds.length > 0) {
-          const invitationId = invitationIds.pop()
-          return admin.database().ref('/invitations/' + invitationId + '/account').update(data)
-        }
-      }, MAX_CONCURRENT)
-
-      return promisePool.start()
-    }
-
+    const updates = {}
+    // Sync users
+    Object.keys(account.users || {}).forEach(userId => {
+      updates['/users/' + userId + '/accounts/' + accountId] = {title: account.title}
+    })
+    // Sync invitations
+    Object.keys(account.invitations || {}).forEach(invitationId => {
+      updates['/invitations/' + invitationId + '/account/title'] = account.title
+    })
     if (userIds.length === 0) {
-      return admin.database().ref('accounts/' + accountId).remove()
+      updates['accounts/' + accountId] = null
     }
+    if (Object.keys(updates).length === 0) {
+      return null
+    }
+    return admin.database().ref().update(updates)
   }
   return null
 })
@@ -138,7 +122,7 @@ exports.createInvitation = functions.database.ref('/invitations/{invitationId}')
 
 exports.deleteInvitation = functions.database.ref('/invitations/{invitationId}').onDelete(event => {
   const invitationId = event.data.key
-  const invitation = event.data.val() || {}
+  const invitation = event.data.previous.val() || {}
   if (invitation.account && invitation.account.id) {
     return admin.database().ref('/accounts/' + invitation.account.id + '/invitations/' + invitationId).remove()
   }
@@ -226,7 +210,7 @@ exports.updateArtworks = functions.database.ref('/accounts/{accountId}/artworks/
 exports.deleteArtwork = functions.database.ref('/accounts/{accountId}/artworks/{artworkId}').onDelete(event => {
   const accountId = event.params.accountId
   const artworkId = event.data.key
-  const artwork = event.data.val() || {}
+  const artwork = event.data.previous.val() || {}
 
   const files = artwork.image ? [artwork.image.storageUri] : []
   const publicIds = artwork.published ? [artworkId] : []
@@ -297,7 +281,7 @@ exports.updateArtist = functions.database.ref('/accounts/{accountId}/artists/{ar
 exports.deleteArtist = functions.database.ref('/accounts/{accountId}/artists/{artistId}').onDelete(event => {
   const accountId = event.params.accountId
   const artistId = event.data.key
-  const artist = event.data.val() || {}
+  const artist = event.data.previous.val() || {}
 
   const files = artist.image ? [artist.image.storageUri] : []
   const publicIds = artist.published ? [artistId] : []
@@ -380,7 +364,7 @@ exports.updateShow = functions.database.ref('/accounts/{accountId}/shows/{showId
 exports.deleteShow = functions.database.ref('/accounts/{accountId}/shows/{showId}').onDelete(event => {
   const accountId = event.params.accountId
   const showId = event.data.key
-  const show = event.data.val() || {}
+  const show = event.data.previous.val() || {}
 
   const files = show.image ? [show.image.storageUri] : []
   const publicIds = show.published ? [showId] : []
@@ -451,7 +435,7 @@ exports.updatePlace = functions.database.ref('/accounts/{accountId}/places/{plac
 exports.deletePlace = functions.database.ref('/accounts/{accountId}/places/{placeId}').onDelete(event => {
   const accountId = event.params.accountId
   const placeId = event.data.key
-  const place = event.data.val() || {}
+  const place = event.data.previous.val() || {}
 
   const files = place.image ? [place.image.storageUri] : []
   const publicIds = place.published ? [placeId] : []
