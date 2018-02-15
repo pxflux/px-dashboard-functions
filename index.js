@@ -43,7 +43,7 @@ exports.createAuth = functions.auth.user().onCreate(event => {
 })
 
 exports.deleteAuth = functions.auth.user().onDelete(event => {
-  const uid = event.data.previous.uid
+  const uid = event.data.uid
   if (uid.startsWith('player:')) {
     return null
   }

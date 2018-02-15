@@ -4,8 +4,8 @@
   "private": true,
   "dependencies": {
     "es6-promise-pool": "^2.5.0",
-    "firebase-admin": "~5.4.0",
-    "firebase-functions": "^0.7.0"
+    "firebase-admin": "~5.8.1",
+    "firebase-functions": "^0.8.1"
   },
   "devDependencies": {
     "chai": "^3.5.0",
