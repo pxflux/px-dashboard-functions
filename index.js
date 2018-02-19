@@ -94,9 +94,16 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
     // Sync users
     const userIds = {}
     if (event.data.child('users').changed()) {
+      // Delete removed
       Object.keys(previous.users || {}).forEach(userId => userIds[userId] = null)
       Object.keys(account.users || {}).forEach(userId => delete userIds[userId])
+      // Add new
     }
+    Object.keys(account.users || {}).forEach(userId => userIds[userId] = {title: account.title})
+    console.log('userIds')
+    console.log(previous.users || {})
+    console.log(account.users || {})
+    console.log(userIds)
 
     // Sync invitations
     const invitationIds = {}
@@ -123,6 +130,7 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
       updates['/invitations/' + invitationId + '/accounts/' + accountId] = invitationIds[invitationId]
     })
   }
+  console.log(updates)
 
   if (Object.keys(updates).length === 0) {
     return null
