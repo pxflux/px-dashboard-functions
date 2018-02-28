@@ -521,3 +521,30 @@ exports.updatePlayerPins = functions.database.ref('player-pins/{pin}').onWrite(e
     })
   })
 })
+
+exports.updatePlayer = functions.database.ref('/accounts/{accountId}/players/{playerId}').onWrite(event => {
+  if (!event.data.exists()) {
+    return null
+  }
+  const accountId = event.params.accountId
+  const playerId = event.data.key
+  const player = event.data.val() || {}
+
+  if (!player.pin) {
+    return null
+  }
+  const db = admin.database()
+  return db.ref('player-pins').once('value').then((snapshot) => {
+    const updates = {}
+    snapshot.forEach((child) => {
+      const item = child.val() || {}
+      if (item.accountId === accountId && child.key !== player.pin) {
+        updates['/player-pins/' + child.key] = null
+      }
+    })
+    if (Object.keys(updates).length === 0) {
+      return null
+    }
+    return db.ref().update(updates)
+  })
+})
