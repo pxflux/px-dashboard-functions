@@ -546,11 +546,13 @@ exports.updatePlayer = functions.database.ref('/accounts/{accountId}/players/{pl
       updates['/player-pins/' + player.pin + '/artwork/title'] = player.artwork.title
       updates['/player-pins/' + player.pin + '/artwork/author'] = player.artwork.author
       updates['/player-pins/' + player.pin + '/artwork/controls'] = player.artwork.controls
+    } else {
+      updates['/player-pins/' + player.pin + '/playerId'] = playerId
+      updates['/player-pins/' + player.pin + '/artwork'] = null
     }
     if (Object.keys(updates).length === 0) {
       return null
     }
-    console.log(updates)
     return db.ref().update(updates)
   })
 })
