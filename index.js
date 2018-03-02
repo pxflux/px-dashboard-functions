@@ -538,8 +538,14 @@ exports.updatePlayer = functions.database.ref('/accounts/{accountId}/players/{pl
     const updates = {}
     snapshot.forEach((child) => {
       const item = child.val() || {}
-      if (item.accountId === accountId && child.key !== player.pin) {
-        updates['/player-pins/' + child.key] = null
+      if (item.accountId === accountId) {
+        if (child.key !== player.pin) {
+          updates['/player-pins/' + child.key] = null
+        } else if (player.artwork) {
+          updates['/player-pins/' + child.key + '/artwork/title'] = player.artwork.title
+          updates['/player-pins/' + child.key + '/artwork/author'] = player.artwork.author
+          updates['/player-pins/' + child.key + '/artwork/controls'] = player.artwork.controls
+        }
       }
     })
     if (Object.keys(updates).length === 0) {
