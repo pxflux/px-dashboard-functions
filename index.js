@@ -130,7 +130,6 @@ exports.updateAccount = functions.database.ref('accounts/{accountId}').onUpdate(
       updates['/invitations/' + invitationId + '/accounts/' + accountId] = invitationIds[invitationId]
     })
   }
-  console.log(updates)
 
   if (Object.keys(updates).length === 0) {
     return null
@@ -538,19 +537,20 @@ exports.updatePlayer = functions.database.ref('/accounts/{accountId}/players/{pl
     const updates = {}
     snapshot.forEach((child) => {
       const item = child.val() || {}
-      if (item.accountId === accountId) {
-        if (child.key !== player.pin) {
-          updates['/player-pins/' + child.key] = null
-        } else if (player.artwork) {
-          updates['/player-pins/' + child.key + '/artwork/title'] = player.artwork.title
-          updates['/player-pins/' + child.key + '/artwork/author'] = player.artwork.author
-          updates['/player-pins/' + child.key + '/artwork/controls'] = player.artwork.controls
-        }
+      if (item.accountId === accountId && child.key !== player.pin) {
+        updates['/player-pins/' + child.key] = null
       }
     })
+    if (player.artwork) {
+      updates['/player-pins/' + player.pin + '/playerId'] = playerId
+      updates['/player-pins/' + player.pin + '/artwork/title'] = player.artwork.title
+      updates['/player-pins/' + player.pin + '/artwork/author'] = player.artwork.author
+      updates['/player-pins/' + player.pin + '/artwork/controls'] = player.artwork.controls
+    }
     if (Object.keys(updates).length === 0) {
       return null
     }
+    console.log(updates)
     return db.ref().update(updates)
   })
 })
