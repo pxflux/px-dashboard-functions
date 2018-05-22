@@ -533,28 +533,13 @@ exports.place = {
 }
 
 exports.playerPin = {
-  update: functions.database.ref('player-pins/{pin}').onWrite((change, context) => {
-    if (!change.after.exists()) {
-      return null
-    }
-    const changedFn = (name) => {
-      const beforeVal = change.before.val() || {}
-      const afterVal = change.after.val() || {}
-      if (beforeVal.hasOwnProperty(name) && afterVal.hasOwnProperty(name)) {
-        return beforeVal[name] !== afterVal[name]
-      }
-      return beforeVal.hasOwnProperty(name) || afterVal.hasOwnProperty(name)
-    }
-    const changed = changedFn('accountId')
-    if (!changed) {
-      return null
-    }
+  update: functions.database.ref('player-pins/{pin}').onCreate((snapshot, context) => {
     const pin = context.params.pin
-    const data = change.after.val() || {}
-    if (!data.accountId) {
+    const data = snapshot.val() || {}
+    if (data.accessToken || !data.accountId) {
       return null
     }
-    const playerId = data.playerId || crypto.randomBytes(20).toString('hex')
+    const playerId = crypto.randomBytes(20).toString('hex')
     const uid = `player:${playerId}`
     return admin.auth().getUser(uid).catch(error => {
       if (error.code === 'auth/user-not-found') {
@@ -567,9 +552,10 @@ exports.playerPin = {
     }).then(user => {
       return admin.auth().createCustomToken(user.uid, {accountId: data.accountId})
     }).then(authToken => {
-      return admin.database().ref('player-pins/' + pin).update({
-        playerId: playerId,
-        accessToken: authToken
+      return admin.database().ref('player-pins/' + pin).remove().then(() => {
+        return admin.database().ref('player-pins/' + pin).set({
+          accessToken: authToken
+        })
       })
     }).then(() => {
       return admin.database().ref('/accounts/' + data.accountId + '/players/' + playerId).set({
