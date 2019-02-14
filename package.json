@@ -1,18 +1,4 @@
 {
-  "name": "functions",
-  "description": "Cloud Functions for Firebase",
-  "private": true,
-  "dependencies": {
-    "es6-promise-pool": "^2.5.0",
-    "firebase-admin": "^5.12.1",
-    "firebase-functions": "^1.0.2"
-  },
-  "devDependencies": {
-    "chai": "^3.5.0",
-    "chai-as-promised": "^6.0.0",
-    "mocha": "^3.2.0",
-    "sinon": "^1.17.7"
-  },
   "scripts": {
     "serve": "firebase serve --only functions",
     "shell": "firebase experimental:functions:shell",
@@ -21,5 +7,20 @@
     "logs": "firebase functions:log",
     "lint": "./node_modules/.bin/eslint --max-warnings=0 .",
     "test": "NODE_ENV=TEST ./node_modules/.bin/mocha --reporter spec"
-  }
+  },
+  "dependencies": {
+    "es6-promise-pool": "^2.5.0",
+    "firebase-admin": "^7.0.0",
+    "firebase-functions": "^2.2.0"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^5.2.0",
+    "sinon": "^7.2.3"
+  },
+  "engines": {
+    "node": "8"
+  },
+  "private": true
 }
