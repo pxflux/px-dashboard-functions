@@ -62,5 +62,6 @@ typings/
 .env
 .DS_Store
 
-## firebase auth
+## firebase
 service-account.json
+.runtimeconfig.json
