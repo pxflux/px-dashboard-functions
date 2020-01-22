@@ -18,6 +18,7 @@
     "stripe": "^7.15.0"
   },
   "devDependencies": {
+    "@types/stripe": "^7.13.20",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "firebase-functions-test": "^0.1.7",
