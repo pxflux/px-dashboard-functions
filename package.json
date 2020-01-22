@@ -1,7 +1,7 @@
 {
   "scripts": {
     "preserve": "firebase functions:config:get > .runtimeconfig.json",
-    "serve": "firebase serve --only functions",
+    "serve": "firebase serve --only functions,database",
     "shell": "firebase experimental:functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
