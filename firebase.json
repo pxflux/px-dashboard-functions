@@ -1,6 +1,11 @@
 {
   "functions": {
-    "source": "/"
+    "source": "/",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ]
   },
   "emulators": {
     "functions": {
