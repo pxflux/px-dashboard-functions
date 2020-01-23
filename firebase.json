@@ -1,6 +1,16 @@
 {
   "functions": {
-    "source": "/"
+    "source": "/",
+    "ignore": [
+      ".*",
+      "test/**",
+      "*.log",
+      "firebase.json",
+      "package.json",
+      "LICENSE",
+      "README.md",
+      "SETUP.md"
+    ]
   },
   "emulators": {
     "functions": {

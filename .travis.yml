@@ -1,16 +1,16 @@
 language: node_js
 node_js:
-- '10'
+  - '10'
 branches:
   only:
-  - master
-before_install:
-- openssl aes-256-cbc -K $encrypted_7688485ae55e_key -iv $encrypted_7688485ae55e_iv -in service-account.json.enc -out service-account.json -d
+    - master
+before_deploy:
+  - openssl aes-256-cbc -K $encrypted_7688485ae55e_key -iv $encrypted_7688485ae55e_iv -in service-account.json.enc -out service-account.json -d
+  - npm i --production
 deploy:
-  skip_cleanup: true
   provider: firebase
   token:
     secure: amsmzEqDL69mxnmfdACcnyNlwxcgDOxU/RRhVnqON1jP7MlVYivqv1ahn9fxeivX81KMeyJyJGKBcfRN5W4iBF8lkcNK+vh6QFj9cWpTeQT2iEHzeru0pBYizS4pFhKeqYRAAxhFMc8jugfw6nlj9E1afIVPFso6y1vb74EeMncA41TMXQuB2vK4jNduQQYezlqM7zbL2Qwje4igYA6/nBe2+Al5zvghZoK1XJYlCBlZYe9xk0rMk6oGPy8yPYTVvDHeomoF+HWvPcgiu0avhLsjEQtbQxaFnoAAThcj6xC3fZ1jpg/t3m4F8NxKw6leT/ordVCPMAEnM0pBRlZHKOjvFxxztBve7D9E2A/WhzFjgyQ27vocUQ6fbzQ7yimReg9ZtiBIt4ysqep3/+aKRrDUYtig3KYSdUJ/NVTEWJUld6A35zjQ1bypdd2jfq/GkW3cza8B+p1c/bzUpJa6AlB3Y/9gyZh5vObCI+10lc6OFU5fexY4DKuLExtwOaLnbDEOsPDjM3Ra5pnPxTm0C/w8VWRy9nJBHqRXc5lDvT+f3mwpAZoZJEEhCPMGRdPOVROuhd55zGWy8TxZWZMDyRlcZIpcqJM1FhrwvOJekfrqiD6l91inLnmtsUJbt+8aQR5NGy1LlFIp6xe+UB37bS0Lqh2NXjxAzjrzDmBTEt4=
 cache:
   directories:
-  - node_modules
+    - node_modules
