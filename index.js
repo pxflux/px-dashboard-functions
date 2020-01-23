@@ -1,8 +1,5 @@
 'use strict';
 
-const admin = require('firebase-admin');
-admin.initializeApp();
-
 exports.auth = require('./lib/auth');
 exports.user = require('./lib/users');
 exports.account = require('./lib/account');
