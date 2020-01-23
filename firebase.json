@@ -2,9 +2,13 @@
   "functions": {
     "source": "/",
     "ignore": [
-      "firebase.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/*.log",
+      "**/node_modules/**",
+      "firebase.json",
+      "SETUP.md",
+      "README.md",
+      "service-account.json"
     ]
   },
   "emulators": {

@@ -1,9 +1,7 @@
 'use strict';
 
 const admin = require('firebase-admin');
-admin.initializeApp(Object.assign({}, JSON.parse(process.env.FIREBASE_CONFIG), {
-  credential: admin.credential.cert(require('./service-account.json'))
-}));
+admin.initializeApp();
 
 exports.auth = require('./lib/auth');
 exports.user = require('./lib/users');
