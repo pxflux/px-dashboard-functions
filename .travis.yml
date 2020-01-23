@@ -6,8 +6,6 @@ branches:
     - master
 before_deploy:
   - openssl aes-256-cbc -K $encrypted_7688485ae55e_key -iv $encrypted_7688485ae55e_iv -in service-account.json.enc -out service-account.json -d
-  - rm -rf node_modules
-  - npm i --production
 deploy:
   provider: firebase
   skip_cleanup: true
