@@ -11,3 +11,4 @@ exports.place = require('./lib/place');
 exports.playerPin = require('./lib/player-pin');
 exports.player = require('./lib/player');
 exports.stripe = require('./lib/stripe/index');
+exports.backblaze = require('./lib/backblaze/index');
